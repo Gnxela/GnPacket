@@ -19,21 +19,13 @@ type PacketMessage struct {
 
 func main() {
 	netManager := GnPacket.New(100)
-
+	
+	netManager.AddHandler(1, handlePing)
+	netManager.AddHandler(2, handleMessage)
+	
 	go play(&netManager)
 	
-	for {
-		packet := <- netManager.UnhandledQueue
-		if (packet.Id == 1) {
-			ping := PacketPing{&packet, time.Now()}
-			ping.Deserialize(packet.Data)
-			fmt.Printf("%v\n", time.Now().Sub(ping.Start))
-		} else if (packet.Id == 2) {
-			message := PacketMessage{&packet, ""}
-			message.Deserialize(packet.Data)
-			fmt.Printf("%v\n", message.Message)
-		}
-	}
+	<-netManager.UnhandledQueue//Just hold the program open, we'll never recieve an unhandled packet currently
 }
 
 func play(netManager *GnPacket.NetManager) {
@@ -46,6 +38,21 @@ func play(netManager *GnPacket.NetManager) {
 		data = message.Write(&message);
 		netManager.Feed(data)
 	}
+}
+
+func handlePing(packet GnPacket.GnPacket) {
+	ping := PacketPing{&packet, time.Now()}
+	ping.Deserialize(packet.Data)
+	fmt.Printf("%v\n", time.Now().Sub(ping.Start))
+}
+
+var i int = 0;
+
+func handleMessage(packet GnPacket.GnPacket) {
+	message := PacketMessage{&packet, ""}
+	message.Deserialize(packet.Data)
+	fmt.Printf("%v%d\n", message.Message, i)
+	i++
 }
 
 func NewPacketMessage(message string) PacketMessage {
