@@ -39,11 +39,11 @@ func main() {
 func play(netManager *GnPacket.NetManager) {
 	for {
 		ping := NewPacketPing();
-		data := ping.Write(ping);
+		data := ping.Write(&ping);
 		netManager.Feed(data)
 		
 		message := NewPacketMessage("Hello World!");
-		data = message.Write(message);
+		data = message.Write(&message);
 		netManager.Feed(data)
 	}
 }
@@ -52,7 +52,7 @@ func NewPacketMessage(message string) PacketMessage {
 	return PacketMessage{&GnPacket.GnPacket{2, make([]byte, 0)}, message};
 }
 
-func (packet PacketMessage) Serialize() []byte {
+func (packet *PacketMessage) Serialize() []byte {
 	return []byte(packet.Message)
 }
 
@@ -64,7 +64,7 @@ func NewPacketPing() PacketPing {
 	return PacketPing{&GnPacket.GnPacket{1, make([]byte, 0)}, time.Now()};
 }
 
-func (packet PacketPing) Serialize() []byte {
+func (packet *PacketPing) Serialize() []byte {
 	data, err := packet.Start.GobEncode()
 	if (err != nil) {
 		panic(err)
