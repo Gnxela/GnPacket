@@ -38,7 +38,7 @@ func (netManager *NetManager) Feed(data []byte) {
 		packetId := data[4:6];
 		var id int16 = int16(packetId[0]) * 255 + int16(packetId[1])
 		
-		packet := GnPacket{id, data}
+		packet := GnPacket{id, data[6:]}
 		netManager.UnhandledQueue <- packet;
 	}
 	netManager.mutex.Unlock()

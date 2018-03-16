@@ -5,12 +5,16 @@ import (
 	"./GnPacket"
 	
 	"fmt"
-	"math/rand"
 )
 
 type PacketPing struct {
 	*GnPacket.GnPacket
 	Start time.Time
+}
+
+type PacketMessage struct {
+	*GnPacket.GnPacket
+	Message string
 }
 
 func main() {
@@ -23,26 +27,37 @@ func main() {
 		if (packet.Id == 1) {
 			ping := PacketPing{&packet, time.Now()}
 			ping.Deserialize(packet.Data)
-			fmt.Printf("%v\n", time.Now().Sub(ping.Start));
+			fmt.Printf("%v\n", time.Now().Sub(ping.Start))
+		} else if (packet.Id == 2) {
+			message := PacketMessage{&packet, ""}
+			message.Deserialize(packet.Data)
+			fmt.Printf("%v\n", message.Message)
 		}
 	}
 }
 
 func play(netManager *GnPacket.NetManager) {
 	for {
-		packet := NewPacketPing();
-		fmt.Printf("%v\n", packet.Start);
-		data := packet.Write(packet);
+		ping := NewPacketPing();
+		data := ping.Write(ping);
+		netManager.Feed(data)
 		
-		length := len(data)
-		cut := rand.Intn(length + 1)
-		
-		fmt.Printf("Cutting at %d, length %d\n", cut, length)
-		netManager.Feed(data[:cut])
-
-		netManager.Feed(data[cut:])
-		time.Sleep(time.Second / 4)
+		message := NewPacketMessage("Hello World!");
+		data = message.Write(message);
+		netManager.Feed(data)
 	}
+}
+
+func NewPacketMessage(message string) PacketMessage {
+	return PacketMessage{&GnPacket.GnPacket{2, make([]byte, 0)}, message};
+}
+
+func (packet PacketMessage) Serialize() []byte {
+	return []byte(packet.Message)
+}
+
+func (packet *PacketMessage) Deserialize(data []byte) {
+	packet.Message = string(data)
 }
 
 func NewPacketPing() PacketPing {
@@ -58,5 +73,5 @@ func (packet PacketPing) Serialize() []byte {
 }
 
 func (packet *PacketPing) Deserialize(data []byte) {
-	packet.Start.GobDecode(data[6:])
+	packet.Start.GobDecode(data)
 }

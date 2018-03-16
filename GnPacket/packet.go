@@ -26,18 +26,6 @@ func (packet *GnPacket) Write(writable PacketWritable) []byte {
 	return append(append(length, packetId[:]...), data[:]...)
 }
 
-func (packet *GnPacket) Read(data []byte) {
-	packetLength := data[:4];
-	length := binary.LittleEndian.Uint32(packetLength)
-	
-	packetId := data[4:6];
-	id := packetId[0] * 255 + packetId[1]
-	
-	packetData := data[6:6+length];
-	
-	_, _ = packetData, id
-}
-
 type PacketWritable interface {
 	Serialize() []byte
 }
