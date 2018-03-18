@@ -22,6 +22,7 @@ func main() {
 	
 	netManager.AddHandler(1, handlePing)
 	netManager.AddHandler(2, handleMessage)
+	netManager.AddHandler(2, handleMessage)
 	
 	go play(&netManager)
 	
@@ -37,6 +38,7 @@ func play(netManager *GnPacket.NetManager) {
 		message := NewPacketMessage("Hello World!");
 		data = message.Write(&message);
 		netManager.Feed(data)
+		time.Sleep(time.Second)
 	}
 }
 

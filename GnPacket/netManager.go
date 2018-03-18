@@ -7,7 +7,7 @@ import (
 
 type NetManager struct {
 	UnhandledQueue chan GnPacket
-	handlers map[int16]func(packet GnPacket)
+	handlers map[int16][]func(packet GnPacket)
 	data []byte
 	mutex sync.Mutex
 }
@@ -15,7 +15,7 @@ type NetManager struct {
 func New(queueLength int) NetManager {
 	netManager := NetManager{
 		make(chan GnPacket, queueLength),
-		make(map[int16]func(packet GnPacket)),
+		make(map[int16][]func(packet GnPacket)),
 		make([]byte, 0),
 		sync.Mutex{},
 	}
@@ -25,7 +25,7 @@ func New(queueLength int) NetManager {
 }
 
 func (netManager *NetManager) AddHandler(id int16, handler func(packet GnPacket)) {
-	netManager.handlers[id] = handler;
+	netManager.handlers[id] = append(netManager.handlers[id], handler);
 }
 
 func (netManager *NetManager) Feed(data []byte) {
@@ -46,8 +46,10 @@ func (netManager *NetManager) Feed(data []byte) {
 		
 		packet := GnPacket{id, data[6:]}
 		
-		if handler, ok := netManager.handlers[id]; ok {
-			handler(packet);
+		if handlers, ok := netManager.handlers[id]; ok {
+			for _, handler := range handlers {
+				handler(packet);
+			}
 		} else {
 			netManager.UnhandledQueue <- packet;
 		}
