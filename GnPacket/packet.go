@@ -5,7 +5,7 @@ import (
 )
 
 type GnPacket struct {
-	Id int16
+	Id uint16
 	Data []byte
 }
 

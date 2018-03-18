@@ -9,7 +9,7 @@ import (
 
 type NetManager struct {
 	UnhandledQueue chan GnPacket
-	handlers map[int16][]func(packet GnPacket) bool
+	handlers map[uint16][]func(packet GnPacket) bool
 	data []byte
 	mutex sync.Mutex
 }
@@ -17,7 +17,7 @@ type NetManager struct {
 func New(queueLength int) NetManager {
 	netManager := NetManager{
 		make(chan GnPacket, queueLength),
-		make(map[int16][]func(packet GnPacket) bool),
+		make(map[uint16][]func(packet GnPacket) bool),
 		make([]byte, 0),
 		sync.Mutex{},
 	}
@@ -26,11 +26,11 @@ func New(queueLength int) NetManager {
 	
 }
 
-func (netManager *NetManager) AddHandler(id int16, handler func(packet GnPacket) bool) {
+func (netManager *NetManager) AddHandler(id uint16, handler func(packet GnPacket) bool) {
 	netManager.handlers[id] = append(netManager.handlers[id], handler);
 }
 
-func (netManager *NetManager) RemoveHandler(id int16, handler func(packet GnPacket) bool) {
+func (netManager *NetManager) RemoveHandler(id uint16, handler func(packet GnPacket) bool) {
 	if handlers, ok := netManager.handlers[id]; ok {
 		for i, handle := range handlers {
 			if fmt.Sprintf("%v", handle) == fmt.Sprintf("%v", handler) {
@@ -54,7 +54,7 @@ func (netManager *NetManager) Feed(data []byte) {
 		netManager.data = netManager.data[6 + length:]//Remove the data of the packet
 		
 		packetId := data[4:6];
-		var id int16 = int16(packetId[0]) * 255 + int16(packetId[1])
+		var id uint16 = uint16(packetId[0]) * 255 + uint16(packetId[1])
 		
 		packet := GnPacket{id, data[6:]}
 		
