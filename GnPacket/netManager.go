@@ -3,11 +3,13 @@ package GnPacket
 import (
 	"sync"
 	"encoding/binary"
+	
+	"fmt"
 )
 
 type NetManager struct {
 	UnhandledQueue chan GnPacket
-	handlers map[int16][]func(packet GnPacket)
+	handlers map[int16][]func(packet GnPacket) bool
 	data []byte
 	mutex sync.Mutex
 }
@@ -15,7 +17,7 @@ type NetManager struct {
 func New(queueLength int) NetManager {
 	netManager := NetManager{
 		make(chan GnPacket, queueLength),
-		make(map[int16][]func(packet GnPacket)),
+		make(map[int16][]func(packet GnPacket) bool),
 		make([]byte, 0),
 		sync.Mutex{},
 	}
@@ -24,8 +26,18 @@ func New(queueLength int) NetManager {
 	
 }
 
-func (netManager *NetManager) AddHandler(id int16, handler func(packet GnPacket)) {
+func (netManager *NetManager) AddHandler(id int16, handler func(packet GnPacket) bool) {
 	netManager.handlers[id] = append(netManager.handlers[id], handler);
+}
+
+func (netManager *NetManager) RemoveHandler(id int16, handler func(packet GnPacket) bool) {
+	if handlers, ok := netManager.handlers[id]; ok {
+		for i, handle := range handlers {
+			if fmt.Sprintf("%v", handle) == fmt.Sprintf("%v", handler) {
+				netManager.handlers[id] = append(netManager.handlers[id][:i], netManager.handlers[id][i + 1:]...);
+			}
+		}
+	}
 }
 
 func (netManager *NetManager) Feed(data []byte) {
@@ -48,7 +60,9 @@ func (netManager *NetManager) Feed(data []byte) {
 		
 		if handlers, ok := netManager.handlers[id]; ok {
 			for _, handler := range handlers {
-				handler(packet);
+				if !handler(packet) {
+					break
+				}
 			}
 		} else {
 			netManager.UnhandledQueue <- packet;

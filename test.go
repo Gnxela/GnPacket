@@ -22,9 +22,13 @@ func main() {
 	
 	netManager.AddHandler(1, handlePing)
 	netManager.AddHandler(2, handleMessage)
-	netManager.AddHandler(2, handleMessage)
+	netManager.AddHandler(2, handleMessage2)
 	
 	go play(&netManager)
+	
+	time.Sleep(time.Second * 5)
+	
+	netManager.RemoveHandler(2, handleMessage)
 	
 	<-netManager.UnhandledQueue//Just hold the program open, we'll never recieve an unhandled packet currently
 }
@@ -42,19 +46,28 @@ func play(netManager *GnPacket.NetManager) {
 	}
 }
 
-func handlePing(packet GnPacket.GnPacket) {
+func handlePing(packet GnPacket.GnPacket) bool {
 	ping := PacketPing{&packet, time.Now()}
 	ping.Deserialize(packet.Data)
 	fmt.Printf("%v\n", time.Now().Sub(ping.Start))
+	return true
 }
 
 var i int = 0;
 
-func handleMessage(packet GnPacket.GnPacket) {
+func handleMessage(packet GnPacket.GnPacket) bool {
 	message := PacketMessage{&packet, ""}
 	message.Deserialize(packet.Data)
 	fmt.Printf("%v%d\n", message.Message, i)
 	i++
+	return false
+}
+
+func handleMessage2(packet GnPacket.GnPacket) bool {
+	message := PacketMessage{&packet, ""}
+	message.Deserialize(packet.Data)
+	fmt.Printf("%v appended this!\n", message.Message)
+	return true
 }
 
 func NewPacketMessage(message string) PacketMessage {
