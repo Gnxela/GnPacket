@@ -1,7 +1,6 @@
 package GnPacket
 
 import (
-	"sync"
 	"encoding/binary"
 	
 	"fmt"
@@ -10,16 +9,12 @@ import (
 type NetManager struct {
 	UnhandledQueue chan GnPacket
 	handlers map[uint16][]func(packet GnPacket) bool
-	data []byte
-	mutex sync.Mutex
 }
 
 func New(queueLength int) NetManager {
 	netManager := NetManager{
 		make(chan GnPacket, queueLength),
 		make(map[uint16][]func(packet GnPacket) bool),
-		make([]byte, 0),
-		sync.Mutex{},
 	}
 	
 	return netManager
@@ -40,35 +35,33 @@ func (netManager *NetManager) RemoveHandler(id uint16, handler func(packet GnPac
 	}
 }
 
-func (netManager *NetManager) Feed(data []byte) {
-	netManager.mutex.Lock()
-	
-	netManager.data = append(netManager.data, data...)
-	
-	packetLength := netManager.data[:4];
-	length := binary.LittleEndian.Uint32(packetLength)
-	
-	if (len(netManager.data) >= int(6 + length)) {
-		//We have a completed packet
-		data := netManager.data[:6 + length]
-		netManager.data = netManager.data[6 + length:]//Remove the data of the packet
-		
-		packetId := data[4:6];
-		var id uint16 = uint16(packetId[0]) * 255 + uint16(packetId[1])
-		
-		packet := GnPacket{id, data[6:]}
-		
-		if handlers, ok := netManager.handlers[id]; ok {
-			for _, handler := range handlers {
-				if !handler(packet) {
-					break
+func (netManager *NetManager) ReadData(data *[]byte) {
+	for {
+		packetLength := (*data)[:4];
+		length := binary.LittleEndian.Uint32(packetLength)
+		if (len(*data) >= int(length) && length > 0) {//If we have a completed packet
+
+			packetData := (*data)[:length]
+			*data = (*data)[length:]//Remove the data of the packet
+			
+			packetId := packetData[4:6];
+			var id uint16 = uint16(packetId[0]) * 255 + uint16(packetId[1])
+			
+			packet := GnPacket{id, packetData[6:]}
+						
+			if handlers, ok := netManager.handlers[id]; ok {
+				for _, handler := range handlers {
+					if !handler(packet) {
+						break
+					}
 				}
+			} else {
+				netManager.UnhandledQueue <- packet;
 			}
 		} else {
-			netManager.UnhandledQueue <- packet;
+			break
 		}
 	}
-	netManager.mutex.Unlock()
 }
 
 func (netManager *NetManager) HasUnhandledPacket() bool {

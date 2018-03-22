@@ -34,14 +34,18 @@ func main() {
 }
 
 func play(netManager *GnPacket.NetManager) {
+	var data []byte
 	for {
-		ping := NewPacketPing();
-		data := ping.Write(&ping);
-		netManager.Feed(data)
+		fmt.Printf("Data length: %d\n", len(data))
+	
+		ping := NewPacketPing()
+		data = append(data, ping.Write(&ping)[:]...)
 		
-		message := NewPacketMessage("Hello World!");
-		data = message.Write(&message);
-		netManager.Feed(data)
+		message := NewPacketMessage("Hello World!")
+		data = append(data, message.Write(&message)[:]...)
+
+		netManager.ReadData(&data)
+
 		time.Sleep(time.Second)
 	}
 }

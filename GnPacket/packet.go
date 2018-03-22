@@ -21,7 +21,7 @@ func (packet *GnPacket) Write(writable PacketWritable) []byte {
 	packetId[1] = byte(packet.Id % 255)
 	
 	length := make([]byte, 4)
-	binary.LittleEndian.PutUint32(length, uint32(len(data)))
+	binary.LittleEndian.PutUint32(length, uint32(len(data) + 6))
 	
 	return append(append(length, packetId[:]...), data[:]...)
 }
