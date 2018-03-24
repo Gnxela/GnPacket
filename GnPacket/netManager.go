@@ -6,11 +6,16 @@ import (
 	"fmt"
 )
 
+// NetManager helps manage the reading and writing of packets.
+// Should only be used over lossless and order garenteed protocols.
 type NetManager struct {
 	UnhandledQueue chan GnPacket
 	handlers map[uint16][]func(packet GnPacket) bool
 }
 
+
+// New returns a NetManager instance. 
+// Ready to read data and fire listeners without further setup (adding listeners required)
 func New(queueLength int) NetManager {
 	netManager := NetManager{
 		make(chan GnPacket, queueLength),
@@ -18,13 +23,18 @@ func New(queueLength int) NetManager {
 	}
 	
 	return netManager
-	
 }
 
+// AddHandler adds a new handler to netManager listening for packet id.
+// The same handler can be added multible times, to the same or different IDs.
+// If a handler returns false, all subsiquent handlers will not fire.
 func (netManager *NetManager) AddHandler(id uint16, handler func(packet GnPacket) bool) {
 	netManager.handlers[id] = append(netManager.handlers[id], handler);
 }
 
+// RemoveHandler removes a handler from netManager.
+// If the handler is not present nothing happens.
+// If a handler has been added multible times, all instances listening for id are removed.
 func (netManager *NetManager) RemoveHandler(id uint16, handler func(packet GnPacket) bool) {
 	if handlers, ok := netManager.handlers[id]; ok {
 		for i, handle := range handlers {
@@ -35,6 +45,10 @@ func (netManager *NetManager) RemoveHandler(id uint16, handler func(packet GnPac
 	}
 }
 
+// ReadData reads the data and parses any packets inside it. 
+// Any parsed packets are removed from the original data.
+// ReadData automatically fires relivant listeners from netManager when a packet is recieved.
+// If there are no listeners for a packet, it is added to netManager.UnhandledQueue.
 func (netManager *NetManager) ReadData(data *[]byte) {
 	for {
 		packetLength := (*data)[:4];
@@ -64,6 +78,7 @@ func (netManager *NetManager) ReadData(data *[]byte) {
 	}
 }
 
+// HasUnhandledPacket returns true if netManager.UnhandledQueue has unhandled packets.
 func (netManager *NetManager) HasUnhandledPacket() bool {
 	return len(netManager.UnhandledQueue) > 0
 }
