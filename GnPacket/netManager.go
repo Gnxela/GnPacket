@@ -51,6 +51,8 @@ func (netManager *NetManager) RemoveHandler(id uint16, handler func(packet GnPac
 // If there are no listeners for a packet, it is added to netManager.UnhandledQueue.
 func (netManager *NetManager) ReadData(data *[]byte) {
 	for {
+		if (len(*data) < 4)
+			return
 		packetLength := (*data)[:4];
 		length := binary.LittleEndian.Uint32(packetLength)
 		if (len(*data) >= int(length) && length > 0) {//If we have a completed packet
